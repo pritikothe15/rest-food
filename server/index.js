@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import User from "./models/User.js";
+import FoodItem from "./models/FoodItem.js";
+import Table from "./models/Table.js";
 
 const app = express();
 app.use(express.json());
@@ -107,6 +109,137 @@ app.post('/login',async(req,res)=>{
             message:"Invalid email or password"
         })
     }
+})
+
+app.post('/createFoodItem',async(req,res)=>{
+    const {title,description,imgUrl,price,category} =req.body;
+
+    const foodItem =new FoodItem({
+        title:title,
+        description:description,
+        imgUrl:imgUrl,
+        price:price,
+        category:category
+    })
+
+    const savedFooditem =await foodItem.save();
+
+    res.json({
+        success:true,
+        message:"Food Item created successfully",
+        data: savedFooditem
+    })
+})
+
+//http://localhost:5000/foodItemsByCategory?category=pizza
+app.get("/fooditemsByCategory",async(req,res)=>{
+    const{category} =req.query;
+
+    const foodItems = await FoodItem.find({
+        category:{ $regex:category,$options :'i'}
+    })
+
+    res.json({
+        success:true,
+        message:"food Item fetched successfully",
+        data: foodItems
+    })
+})
+
+//http://localhost:5000/foodItems?title=pizza
+app.get("/foodItems",async(req,res)=>{
+    const{title} =req.query;
+
+    const foodItems = await FoodItem.find({
+        title:{ $regex:title,$options :'i'}
+    })
+
+    res.json({
+        success:true,
+        message:"food Item fetched successfully",
+        data: foodItems
+    })
+})
+
+app.post("/createTable",async(req,res)=>{
+    const {tableNumber} =req.body;
+
+    const existingTable = await Table.findOne({tableNumber :tableNumber});
+    if(existingTable){
+        return res.json({
+            success:false,
+            message: "Table already exists"
+        })
+    }
+
+    const table = new Table({
+        tableNumber :tableNumber ,
+        occupied :false
+    })
+
+    const savedTable = await table.save();
+
+    res.json({
+        success:true,
+        message:"Table Created successfully",
+        data :savedTable
+    })
+})
+
+app.post("/bookTable",async (req,res)=>{
+    const{tableNumber, userId} =req.body; //userId is ObjectId
+
+    const existingTable = await Table.findOne({
+        tableNumber:tableNumber
+    })
+
+    if(existingTable && existingTable.occupied){
+        return res.json({
+            success:false,
+            message:"Table already occupied"       
+        })
+    }
+
+    if(existingTable){
+        existingTable.occupied = true,
+        existingTable.occupiedBy = userId,
+        await existingTable.save();
+    }
+
+    res.json({
+        success:true,
+        message:"Table booked successfully"    
+    })
+})
+
+app.post("/unbookTable",async(req,res)=>{
+    const {tableNumber} =req.body;
+
+    const existingTable = await Table.findOne({
+        tableNumber:tableNumber
+    }) 
+
+    if(existingTable){
+        existingTable.occupied=false;
+        existingTable.occupiedBy=null;
+        await existingTable.save();
+    }
+
+    res.json({
+        success:true,
+        message:"table unbooked successfully",
+        data :existingTable
+    })
+})
+
+app.get("/availableTables",async (req,res)=>{
+    const availableTables = await Table.find({occupied:false});
+
+    res.json({
+        success:true,
+        message:"Availabel tables fetched successfully",
+        data:availableTables
+    })
 })
 
 
