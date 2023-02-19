@@ -1,8 +1,11 @@
 import React,{useState,useEffect} from 'react'
 import "./Home.css"
 import axios from 'axios';
-import { currentUser } from "../../util/currentUser";
 import FoodItemCard from "./../../components/FoodItemCard/FoodItemCard" 
+import Navbar from "./../../components/Navbar/Navbar"
+
+import { currentUser } from "../../util/currentUser";
+import { loginRequired } from '../../util/loginRequired';
 
 function Home() {
 
@@ -39,14 +42,13 @@ function Home() {
     window.location.href='/login'
   }
 
-  if(!currentUser){
-    window.location.href='/login'
-  }
+  useEffect(()=>{   
+       loginRequired()
+  },[])
   
   return (
     <div>
-      <h1 className='text-center'>Home</h1>
-      <h2> {currentUser?.name}</h2>
+       <Navbar user={currentUser?.name} />
          
       <div className="search-container"> 
       <input type="text" placeholder="Search" className='input-search '
